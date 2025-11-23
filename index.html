@@ -142,7 +142,8 @@
 
         async function fetchWalletData() {
             try {
-                const response = await fetch('https://api.hyperliquid.xyz/info', {
+                // Fetch perpetual data
+                const perpResponse = await fetch('https://api.hyperliquid.xyz/info', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -150,10 +151,33 @@
                         user: WALLET_ADDRESS
                     })
                 });
-                const data = await response.json();
+                const perpData = await perpResponse.json();
                 
-                // Calcolo valori
-                const totalValue = (parseFloat(data.marginSummary?.totalNtlPos || 0) + parseFloat(data.marginSummary?.withdrawable || 0)) || 0;                const currentDateTime = formatDateTime();
+                // Fetch spot data
+                const spotResponse = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        type: 'spotClearinghouseState',
+                        user: WALLET_ADDRESS
+                    })
+                });
+                const spotData = await spotResponse.json();
+                
+                // Calcolo valori perpetui
+                const perpValue = (parseFloat(perpData.marginSummary?.totalNtlPos || 0) + parseFloat(perpData.marginSummary?.withdrawable || 0)) || 0;
+                
+                // Calcolo valori spot (somma tutti i token spot)
+                let spotValue = 0;
+                if (spotData.balances && Array.isArray(spotData.balances)) {
+                    spotValue = spotData.balances.reduce((sum, balance) => {
+                        return sum + parseFloat(balance.total || 0);
+                    }, 0);
+                }
+                
+                // Totale = perpetui + spot
+                const totalValue = perpValue + spotValue;
+                const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
