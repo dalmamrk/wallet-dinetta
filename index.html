@@ -156,7 +156,7 @@
                 const data = await response.json();
                 
                 // Calcolo valori
-                const totalValue = parseFloat(data.marginSummary.accountValue);
+                const totalValue = parseFloat(data.marginSummary.totalNtlPos) + parseFloat(data.marginSummary.withdrawable);
                 const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
