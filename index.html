@@ -217,10 +217,19 @@
                         return sum;
                     }, 0);
                 }
+                            // Calcolo ETH separato (solo account Dinetta)
+                            let spotETH = 0;
+                            if (spotData.balances && Array.isArray(spotData.balances)) {
+                                                spotETH = spotData.balances.reduce((sum, balance) => {
+                                                                        if (balance.coin === 'ETH') {
+                                                                                                    return sum + parseFloat(balance.total || 0);
+                                                                                                }
+                                                                        return sum;
+                                                                    }, 0);
+                                            }
                 const totalUSDC = spotUSDC + arbitrumUSDC;
                 
-                // Totale wallet (USDC + Perps) - SENZA ETH
-                const totalWallet = totalUSDC + perpInvestment;
+            // Totale wallet completo (ETH + USDC + Perps)                const totalWallet = totalUSDC + perpInvestme + spotETH;
                 const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
@@ -233,6 +242,10 @@
                             <td colspan="2" class="section-header">Tokens</td>
                         </tr>
                         <tr class="token-row">
+                                                <tr class="token-row">
+                                                                            <td class="label">ETH</td>
+                                                                                                        <td class="value">$${(spotETH * 3500).toFixed(2)}</td>
+                                                                                                                                </tr>
                             <td class="label">USDC</td>
                             <td class="value">$${totalUSDC.toFixed(2)}</td>
                         </tr>
