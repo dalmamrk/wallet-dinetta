@@ -147,7 +147,7 @@
 
         <div id="content" class="loading">Caricamento dati...</div>
 
-        <div class="timestamp" id="lastUpdate"></div>
+        <!-- Timestamp moved inside content -->
 
         <div class="footer">
             <a href="https://hypurrscan.io/address/0x16ca778798c45c0fc0dffaa60190026075c6630c" class="link-button"
@@ -360,9 +360,10 @@
                             <td class="value highlight">$${totalWallet.toFixed(2)}</td>
                         </tr>
                     </table>
+                    <div class="timestamp">Aggiornato il ${currentDateTime}</div>
                 `;
 
-                document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`;
+                // document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`; (Removed)
             } catch (error) {
                 document.getElementById('content').innerHTML = `
                     <p style="color: #e74c3c; text-align: center; padding: 20px;">
