@@ -151,7 +151,7 @@
 
         <div class="footer">
             <a href="https://hypurrscan.io/address/0x16ca778798c45c0fc0dffaa60190026075c6630c" class="link-button"
-                target="_blank">📊 Vedi dettagli completi</a>
+                target="_blank">dettagli investimento in corso</a>
         </div>
     </div>
 
@@ -227,7 +227,7 @@
             }
         }
 
-        async function getEthPrice() {
+        async function getPrices() {
             try {
                 const response = await fetch('https://api.hyperliquid.xyz/info', {
                     method: 'POST',
@@ -235,10 +235,13 @@
                     body: JSON.stringify({ type: 'allMids' })
                 });
                 const data = await response.json();
-                return parseFloat(data.ETH || 0);
+                return {
+                    ETH: parseFloat(data.ETH || 0),
+                    BTC: parseFloat(data.BTC || 0)
+                };
             } catch (error) {
-                console.error('Errore prezzo ETH:', error);
-                return 0;
+                console.error('Errore prezzi:', error);
+                return { ETH: 0, BTC: 0 };
             }
         }
 
@@ -260,17 +263,27 @@
 
                 const arbitrumUSDC = await getArbitrumUSDC();
                 const arbitrumETH = await getArbitrumETH();
-                const ethPrice = await getEthPrice();
+                const prices = await getPrices();
+                const ethPrice = prices.ETH;
+                const btcPrice = prices.BTC;
 
                 // Calcolo investimento in corso (solo posizioni perpetue)
                 const perpInvestment = parseFloat(perpData.marginSummary?.totalNtlPos || 0);
 
-                // Trova la posizione BTC per ottenere la quantità
+                // Trova la posizione BTC per ottenere la quantità e entry price
                 let btcAmount = 0;
+                let btcEntryPx = 0;
+                let btcPnlPercent = 0;
+
                 if (perpData.assetPositions && Array.isArray(perpData.assetPositions)) {
                     const btcPosition = perpData.assetPositions.find(p => p.position.coin === 'BTC');
                     if (btcPosition) {
                         btcAmount = parseFloat(btcPosition.position.szi || 0);
+                        btcEntryPx = parseFloat(btcPosition.position.entryPx || 0);
+
+                        if (btcEntryPx > 0) {
+                            btcPnlPercent = ((btcPrice - btcEntryPx) / btcEntryPx) * 100;
+                        }
                     }
                 }
 
@@ -304,6 +317,11 @@
                 const totalWallet = totalUSDC + perpInvestment + ethUsdValue;
                 const currentDateTime = formatDateTime();
 
+                // Formattazione PnL
+                const pnlColor = btcPnlPercent >= 0 ? '#27ae60' : '#e74c3c';
+                const pnlSign = btcPnlPercent >= 0 ? '+' : '';
+                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; margin-left: 5px;">(${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
+
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
                         <tr>
@@ -325,8 +343,11 @@
                             <td colspan="2" class="section-header">Investimento in corso</td>
                         </tr>
                         <tr class="token-row">
-                            <td class="label">Bitcoin</td>
-                            <td class="value">$${perpInvestment.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(${btcAmount.toFixed(4)} BTC)</span></td>
+                            <td class="label">BITCOIN</td>
+                            <td class="value">
+                                $${perpInvestment.toFixed(2)} ${pnlHtml}<br>
+                                <span style="font-size: 0.75em; color: #999;">(${btcAmount.toFixed(4)} BTC)</span>
+                            </td>
                         </tr>
                         <tr>
                             <td class="label" style="font-weight: 700; color: #333;">Totale Wallet Dinetta</td>
