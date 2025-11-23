@@ -185,28 +185,6 @@
                 return 0;
             }
         }
-        
-        async function getArbitrumETH() {
-            try {
-                const response = await fetch(ARBITRUM_RPC, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        id: 1,
-                        method: 'eth_getBalance',
-                        params: [WALLET_ADDRESS, 'latest']
-                    })
-                });
-                const data = await response.json();
-                const ethBalance = data.result ? parseInt(data.result, 16) / 1e18 : 0;
-                const ethPrice = 2832; // Prezzo approssimativo ETH, puoi integrare API prezzi
-                return ethBalance * ethPrice;
-            } catch (error) {
-                console.error('Errore Arbitrum ETH:', error);
-                return 0;
-            }
-        }
 
         async function fetchWalletData() {
             try {
@@ -224,10 +202,7 @@
                 });
                 const spotData = await spotResponse.json();
                 
-                const [arbitrumUSDC, arbitrumETH] = await Promise.all([
-                    getArbitrumUSDC(),
-                    getArbitrumETH()
-                ]);
+                const arbitrumUSDC = await getArbitrumUSDC();
                 
                 // Calcolo investimento in corso (solo posizioni perpetue)
                 const perpInvestment = parseFloat(perpData.marginSummary?.totalNtlPos || 0);
@@ -244,20 +219,8 @@
                 }
                 const totalUSDC = spotUSDC + arbitrumUSDC;
                 
-                // Ethereum totale (Spot HyperLiquid + Arbitrum)
-                let spotETH = 0;
-                if (spotData.balances && Array.isArray(spotData.balances)) {
-                    spotETH = spotData.balances.reduce((sum, balance) => {
-                        if (balance.coin === 'ETH' || balance.coin === 'Ethereum') {
-                            return sum + parseFloat(balance.total || 0);
-                        }
-                        return sum;
-                    }, 0);
-                }
-                const totalETH = spotETH + arbitrumETH;
-                
-                // Totale wallet (USDC + ETH + Perps)
-                const totalWallet = totalUSDC + totalETH + perpInvestment;
+                // Totale wallet (USDC + Perps) - SENZA ETH
+                const totalWallet = totalUSDC + perpInvestment;
                 const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
@@ -272,10 +235,6 @@
                         <tr class="token-row">
                             <td class="label">USDC</td>
                             <td class="value">$${totalUSDC.toFixed(2)}</td>
-                        </tr>
-                        <tr class="token-row">
-                            <td class="label">Ethereum</td>
-                            <td class="value">$${totalETH.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td class="label">Investimento in corso</td>
