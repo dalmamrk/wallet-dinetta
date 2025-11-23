@@ -123,9 +123,6 @@
         <div class="footer">
             <a href="https://hypurrscan.io/address/0x16ca778798c45c0fc0dffaa60190026075c6630c" 
                class="link-button" target="_blank">📊 Vedi dettagli completi</a>
-            <div class="footer-note">
-                Per i giovani della famiglia: usa il link sopra per vedere tutte le operazioni e navigare nei menu dell'exchange
-            </div>
         </div>
     </div>
 
@@ -156,8 +153,7 @@
                 const data = await response.json();
                 
                 // Calcolo valori
-                const totalValue = parseFloat(data.marginSummary.totalNtlPos) + parseFloat(data.marginSummary.withdrawable);
-                const currentDateTime = formatDateTime();
+                const totalValue = (parseFloat(data.marginSummary?.totalNtlPos || 0) + parseFloat(data.marginSummary?.withdrawable || 0)) || 0;                const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
