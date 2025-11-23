@@ -11,132 +11,137 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
         }
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 800px;
+            border-radius: 15px;
+            padding: 25px 20px;
+            max-width: 500px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            margin-bottom: 8px;
+            font-size: 1.8em;
             text-align: center;
         }
         .subtitle {
             color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1em;
-            text-align: center;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 20px;
             margin-bottom: 30px;
-        }
-        .info-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            padding: 30px 25px;
-            color: white;
-            text-align: center;
-        }
-        .info-card.big {
-            grid-column: span 1;
-        }
-        .info-label {
             font-size: 0.95em;
-            opacity: 0.95;
-            margin-bottom: 15px;
-            font-weight: 500;
+            text-align: center;
             line-height: 1.4;
         }
-        .info-value {
-            font-size: 2em;
-            font-weight: bold;
-            line-height: 1.2;
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
         }
-        .info-value.positive {
-            color: #4ade80;
+        .data-table tr {
+            border-bottom: 1px solid #e0e0e0;
         }
-        .info-subtext {
-            font-size: 0.85em;
-            opacity: 0.85;
-            margin-top: 8px;
+        .data-table tr:last-child {
+            border-bottom: none;
+        }
+        .data-table td {
+            padding: 18px 15px;
+            font-size: 0.95em;
+        }
+        .data-table .label {
+            color: #666;
+            font-weight: 500;
+            width: 45%;
+        }
+        .data-table .value {
+            color: #333;
+            font-weight: 600;
+            text-align: right;
+            font-size: 1.05em;
+        }
+        .data-table .value.highlight {
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 15px;
         }
         .footer {
             text-align: center;
-            color: #999;
-            font-size: 0.9em;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .loading {
-            text-align: center;
-            color: #667eea;
-            font-size: 1.2em;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
         }
         .link-button {
             display: inline-block;
             background: #667eea;
             color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
+            padding: 12px 25px;
+            border-radius: 8px;
             text-decoration: none;
-            margin-top: 20px;
+            margin-top: 10px;
             transition: all 0.3s;
             font-weight: 600;
-            font-size: 1.05em;
+            font-size: 0.95em;
         }
         .link-button:hover {
             background: #764ba2;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        @media (max-width: 600px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
+        .footer-note {
+            color: #999;
+            font-size: 0.8em;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 30px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🪙 Wallet Dinetta</h1>
-        <p class="subtitle">Esperimento di trading familiare - 30 giorni</p>
+        <p class="subtitle">Esperimento di trading familiare<br>Durata: dal 22 novembre al 27 dicembre 2025</p>
         
         <div id="content" class="loading">Caricamento dati...</div>
+        
+        <div class="timestamp" id="lastUpdate"></div>
         
         <div class="footer">
             <a href="https://hypurrscan.io/address/0x16ca778798c45c0fc0dffaa60190026075c6630c" 
                class="link-button" target="_blank">📊 Vedi dettagli completi</a>
-            <br><br>
-            <div style="color: #bbb; font-size: 0.85em;">
+            <div class="footer-note">
                 Per i giovani della famiglia: usa il link sopra per vedere tutte le operazioni e navigare nei menu dell'exchange
             </div>
-            <br>
-            Ultimo aggiornamento: <span id="lastUpdate"></span>
         </div>
     </div>
 
     <script>
         const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
         const START_DATE = '22 novembre 2025';
-        const INITIAL_DEPOSIT_EUR = 150;
-        const EUR_TO_USD_RATE = 1.05; // Tasso approssimativo
-        const INITIAL_DEPOSIT_USD = INITIAL_DEPOSIT_EUR * EUR_TO_USD_RATE;
+        const INITIAL_DEPOSIT = 150;
+
+        function formatDateTime() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${day}/${month} ore ${hours}:${minutes}`;
+        }
 
         async function fetchWalletData() {
             try {
@@ -150,46 +155,43 @@
                 });
                 const data = await response.json();
                 
-                // Valori dalle API
-                const perpsValue = parseFloat(data.marginSummary.totalNtlPos); // Valore investito in perps
-                const availableBalance = parseFloat(data.marginSummary.withdrawable); // USDC disponibile
-                const totalValue = perpsValue + availableBalance; // Totale wallet
+                // Calcolo valori
+                const totalValue = parseFloat(data.marginSummary.accountValue);
+                const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
-                    <div class="info-grid">
-                        <div class="info-card big">
-                            <div class="info-label">Data apertura</div>
-                            <div class="info-value">${START_DATE}</div>
-                            <div class="info-subtext">Deposito iniziale: ${INITIAL_DEPOSIT_EUR}€<br>($${INITIAL_DEPOSIT_USD.toFixed(2)})</div>
-                        </div>
-                        <div class="info-card big">
-                            <div class="info-label">Attualmente investito<br>in posizioni Perps</div>
-                            <div class="info-value positive">$${perpsValue.toFixed(2)}</div>
-                        </div>
-                        <div class="info-card big">
-                            <div class="info-label">Totale attuale<br>\"Wallet Dinetta\"</div>
-                            <div class="info-value">$${totalValue.toFixed(2)}</div>
-                            <div class="info-subtext">Perps + USDC disponibile</div>
-                        </div>
-                    </div>
+                    <table class="data-table">
+                        <tr>
+                            <td class="label">Inizio esperimento</td>
+                            <td class="value">${START_DATE}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Totale iniziale</td>
+                            <td class="value">$${INITIAL_DEPOSIT.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Totale Wallet al<br><span style="font-size: 0.85em; color: #999;">${currentDateTime}</span></td>
+                            <td class="value highlight">$${totalValue.toFixed(2)}</td>
+                        </tr>
+                    </table>
                 `;
                 
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('it-IT');
+                document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`;
             } catch (error) {
                 document.getElementById('content').innerHTML = `
-                    <p style="color: #e74c3c; text-align: center; padding: 30px;">
-                        ❌ Errore nel caricamento dei dati. Riprova tra qualche istante.
+                    <p style="color: #e74c3c; text-align: center; padding: 20px;">
+                        ❌ Errore nel caricamento dei dati
                     </p>
                 `;
                 console.error('Errore:', error);
             }
         }
 
-        // Carica i dati immediatamente
+        // Carica immediatamente
         fetchWalletData();
         
-        // Aggiorna ogni 30 secondi
-        setInterval(fetchWalletData, 30000);
+        // Aggiorna ogni 60 secondi
+        setInterval(fetchWalletData, 60000);
     </script>
 </body>
 </html>
