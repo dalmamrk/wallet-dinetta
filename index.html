@@ -265,6 +265,15 @@
                 // Calcolo investimento in corso (solo posizioni perpetue)
                 const perpInvestment = parseFloat(perpData.marginSummary?.totalNtlPos || 0);
 
+                // Trova la posizione BTC per ottenere la quantità
+                let btcAmount = 0;
+                if (perpData.assetPositions && Array.isArray(perpData.assetPositions)) {
+                    const btcPosition = perpData.assetPositions.find(p => p.position.coin === 'BTC');
+                    if (btcPosition) {
+                        btcAmount = parseFloat(btcPosition.position.szi || 0);
+                    }
+                }
+
                 // Calcolo USDC totale (Spot HyperLiquid + Arbitrum)
                 let spotUSDC = 0;
                 if (spotData.balances && Array.isArray(spotData.balances)) {
@@ -312,9 +321,12 @@
                             <td class="label">USDC</td>
                             <td class="value">$${totalUSDC.toFixed(2)}</td>
                         </tr>
-                                    <tr class="token-row">
-                            <td class="label">Investimento in corso</td>
-                            <td class="value">$${perpInvestment.toFixed(2)}</td>
+                        <tr>
+                            <td colspan="2" class="section-header">Investimento in corso</td>
+                        </tr>
+                        <tr class="token-row">
+                            <td class="label">Bitcoin</td>
+                            <td class="value">$${perpInvestment.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(${btcAmount.toFixed(4)} BTC)</span></td>
                         </tr>
                         <tr>
                             <td class="label" style="font-weight: 700; color: #333;">Totale Wallet Dinetta</td>
