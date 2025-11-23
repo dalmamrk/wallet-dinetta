@@ -15,7 +15,7 @@ Questa repository contiene una dashboard web per monitorare in tempo reale un wa
 ### Obiettivi Principali:
 1. **Monitoraggio trasparente**: Permettere ai membri della famiglia di visualizzare in tempo reale lo stato del wallet condiviso
 2. **Semplicità di accesso**: Dashboard accessibile via browser senza necessità di installazione o autenticazione
-3. **Aggiornamento automatico**: Dati live aggiornati ogni 60 secondi tramite API HyperLiquid
+3. **Aggiornamento automatico**: Dati live aggiornati ogni 30 secondi tramite API HyperLiquid e RPC Arbitrum
 4. **Design responsive**: Interfaccia ottimizzata per desktop e mobile
 
 ## 🏗️ Architettura
@@ -35,10 +35,9 @@ wallet-dinetta/
 - **JavaScript ES6+**: Logica di business e chiamate API
 
 #### 2. API Integration
-- **Endpoint**: `https://api.hyperliquid.xyz/info`
-- **Metodo**: POST
-- **Tipo di richiesta**: `clearinghouseState`
-- **Frequenza aggiornamenti**: 60 secondi
+- **HyperLiquid**: `https://api.hyperliquid.xyz/info` (POST) - Clearinghouse & Spot State
+- **Arbitrum RPC**: `https://arb1.arbitrum.io/rpc` (POST) - `eth_call` per balance USDC
+- **Frequenza aggiornamenti**: 30 secondi
 
 #### 3. Deployment
 - **GitHub Pages**: Hosting automatico su push al branch `main`
@@ -49,9 +48,9 @@ wallet-dinetta/
 
 ### Metriche Principali:
 1. **Inizio esperimento**: Data di inizio (22 novembre 2025)
-2. **Totale iniziale**: $172.00 (150 Euro) - deposito iniziale
+2. **Totale iniziale**: $168.00 (150 Euro) - deposito iniziale
 3. **Totale Wallet corrente**: Valore real-time del portafoglio
-   - Calcolo: `totalNtlPos + withdrawable`
+   - Calcolo: `Spot ETH + Spot USDC + Arbitrum USDC + Perp Investment`
    - Formato: USD con 2 decimali
 4. **Timestamp**: Data e ora ultimo aggiornamento
 
@@ -64,15 +63,12 @@ wallet-dinetta/
 ```javascript
 const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
 const START_DATE = '22 novembre 2025';
-const INITIAL_DEPOSIT = 172; // $172 = 150 Euro
+const INITIAL_DEPOSIT = 168; // $168 = 150 Euro
 ```
 
 ### Logica di Calcolo Wallet
 ```javascript
-const totalValue = (
-  parseFloat(data.marginSummary?.totalNtlPos || 0) + 
-  parseFloat(data.marginSummary?.withdrawable || 0)
-) || 0;
+const totalValue = spotETH + spotUSDC + arbitrumUSDC + perpInvestment;
 ```
 
 **Nota di sicurezza**: Utilizzo di optional chaining (`?.`) e fallback (`|| 0`) per gestire valori null/undefined e prevenire errori NaN.
@@ -80,7 +76,7 @@ const totalValue = (
 ### Gestione Date/Tempo
 - Formato italiano: `DD/MM ore HH:MM`
 - Timezone: CET (Central European Time)
-- Aggiornamento automatico ogni minuto
+- Aggiornamento automatico ogni 30 secondi
 
 ## 🎨 Design System
 
@@ -113,7 +109,7 @@ const totalValue = (
    - Rendering HTML dinamico
 
 3. **Aggiornamento ciclico**:
-   - `setInterval(fetchWalletData, 60000)` (60 secondi)
+   - `setInterval(fetchWalletData, 30000)` (30 secondi)
    - Aggiornamento timestamp
    - Update valori visualizzati
 
