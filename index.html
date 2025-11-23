@@ -130,6 +130,13 @@
         const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
         const START_DATE = '22 novembre 2025';
         const INITIAL_DEPOSIT = 172;
+        
+        // Arbitrum RPC endpoint (gratuito)
+        const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc';
+        
+        // USDC contract addresses su Arbitrum
+        const USDC_NATIVE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';  // Native USDC
+        const USDC_BRIDGED = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8'; // Bridged USDC
 
         function formatDateTime() {
             const now = new Date();
@@ -138,6 +145,56 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             return `${day}/${month} ore ${hours}:${minutes}`;
+        }
+        
+        // Funzione per leggere balance USDC su Arbitrum
+        async function getArbitrumUSDC() {
+            try {
+                // ERC-20 balanceOf function signature
+                const data = '0x70a08231' + WALLET_ADDRESS.slice(2).padStart(64, '0');
+                
+                // Chiamate parallele per entrambi i contratti USDC
+                const [nativeRes, bridgedRes] = await Promise.all([
+                    fetch(ARBITRUM_RPC, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 1,
+                            method: 'eth_call',
+                            params: [{
+                                to: USDC_NATIVE,
+                                data: data
+                            }, 'latest']
+                        })
+                    }),
+                    fetch(ARBITRUM_RPC, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 2,
+                            method: 'eth_call',
+                            params: [{
+                                to: USDC_BRIDGED,
+                                data: data
+                            }, 'latest']
+                        })
+                    })
+                ]);
+                
+                const nativeData = await nativeRes.json();
+                const bridgedData = await bridgedRes.json();
+                
+                // USDC ha 6 decimali
+                const nativeBalance = nativeData.result ? parseInt(nativeData.result, 16) / 1e6 : 0;
+                const bridgedBalance = bridgedData.result ? parseInt(bridgedData.result, 16) / 1e6 : 0;
+                
+                return nativeBalance + bridgedBalance;
+            } catch (error) {
+                console.error('Errore Arbitrum:', error);
+                return 0;
+            }
         }
 
         async function fetchWalletData() {
@@ -164,6 +221,9 @@
                 });
                 const spotData = await spotResponse.json();
                 
+                // Fetch Arbitrum USDC
+                const arbitrumUSDC = await getArbitrumUSDC();
+                
                 // Calcolo valori perpetui
                 const perpValue = (parseFloat(perpData.marginSummary?.totalNtlPos || 0) + parseFloat(perpData.marginSummary?.withdrawable || 0)) || 0;
                 
@@ -175,8 +235,8 @@
                     }, 0);
                 }
                 
-                // Totale = perpetui + spot
-                const totalValue = perpValue + spotValue;
+                // Totale = perpetui + spot + arbitrum
+                const totalValue = perpValue + spotValue + arbitrumUSDC;
                 const currentDateTime = formatDateTime();
                 
                 document.getElementById('content').innerHTML = `
