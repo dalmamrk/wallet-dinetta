@@ -274,6 +274,7 @@
                 let btcAmount = 0;
                 let btcEntryPx = 0;
                 let btcPnlPercent = 0;
+                let btcPnlValue = 0;
 
                 if (perpData.assetPositions && Array.isArray(perpData.assetPositions)) {
                     const btcPosition = perpData.assetPositions.find(p => p.position.coin === 'BTC');
@@ -282,7 +283,12 @@
                         btcEntryPx = parseFloat(btcPosition.position.entryPx || 0);
 
                         if (btcEntryPx > 0) {
-                            btcPnlPercent = ((btcPrice - btcEntryPx) / btcEntryPx) * 100;
+                            // Costo base = Prezzo ingresso * Quantità
+                            const costBasis = btcEntryPx * btcAmount;
+                            // Valore corrente = Prezzo attuale * Quantità (o perpInvestment)
+                            // Usiamo perpInvestment che è totalNtlPos (valore nozionale posizione)
+                            btcPnlValue = perpInvestment - costBasis;
+                            btcPnlPercent = ((perpInvestment - costBasis) / costBasis) * 100;
                         }
                     }
                 }
@@ -318,9 +324,9 @@
                 const currentDateTime = formatDateTime();
 
                 // Formattazione PnL
-                const pnlColor = btcPnlPercent >= 0 ? '#27ae60' : '#e74c3c';
-                const pnlSign = btcPnlPercent >= 0 ? '+' : '';
-                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; margin-left: 5px;">(${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
+                const pnlColor = btcPnlValue >= 0 ? '#27ae60' : '#e74c3c';
+                const pnlSign = btcPnlValue >= 0 ? '+' : '';
+                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block; margin-top: 4px;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
 
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
@@ -332,8 +338,8 @@
                             <td colspan="2" class="section-header">Tokens</td>
                         </tr>
                         <tr class="token-row">
-                            <td class="label">ETH</td>
-                            <td class="value">$${ethUsdValue.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(${spotETH.toFixed(4)} ETH)</span></td>
+                            <td class="label">ETH <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${spotETH.toFixed(4)})</span></td>
+                            <td class="value">$${ethUsdValue.toFixed(2)}</td>
                         </tr>
                         <tr class="token-row">
                             <td class="label">USDC</td>
@@ -343,10 +349,10 @@
                             <td colspan="2" class="section-header">Investimento in corso</td>
                         </tr>
                         <tr class="token-row">
-                            <td class="label">BITCOIN</td>
+                            <td class="label">BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span></td>
                             <td class="value">
-                                $${perpInvestment.toFixed(2)} ${pnlHtml}<br>
-                                <span style="font-size: 0.75em; color: #999;">(${btcAmount.toFixed(4)} BTC)</span>
+                                $${perpInvestment.toFixed(2)}
+                                ${pnlHtml}
                             </td>
                         </tr>
                         <tr>
