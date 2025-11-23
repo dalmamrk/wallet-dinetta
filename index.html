@@ -227,6 +227,21 @@
             }
         }
 
+        async function getEthPrice() {
+            try {
+                const response = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'allMids' })
+                });
+                const data = await response.json();
+                return parseFloat(data.ETH || 0);
+            } catch (error) {
+                console.error('Errore prezzo ETH:', error);
+                return 0;
+            }
+        }
+
         async function fetchWalletData() {
             try {
                 const perpResponse = await fetch('https://api.hyperliquid.xyz/info', {
@@ -245,6 +260,7 @@
 
                 const arbitrumUSDC = await getArbitrumUSDC();
                 const arbitrumETH = await getArbitrumETH();
+                const ethPrice = await getEthPrice();
 
                 // Calcolo investimento in corso (solo posizioni perpetue)
                 const perpInvestment = parseFloat(perpData.marginSummary?.totalNtlPos || 0);
@@ -271,11 +287,12 @@
                     }, 0);
                 }
                 const spotETH = hyperLiquidSpotETH + arbitrumETH;
+                const ethUsdValue = spotETH * ethPrice;
 
                 const totalUSDC = spotUSDC + arbitrumUSDC;
 
                 // Totale wallet completo (ETH + USDC + Perps)
-                const totalWallet = totalUSDC + perpInvestment + spotETH;
+                const totalWallet = totalUSDC + perpInvestment + ethUsdValue;
                 const currentDateTime = formatDateTime();
 
                 document.getElementById('content').innerHTML = `
@@ -288,13 +305,13 @@
                             <td colspan="2" class="section-header">Tokens</td>
                         </tr>
                         <tr class="token-row">
-                                        <td class="label">ETH</td>
-                                                        <td class="value">${spotETH.toFixed(4)}</td>
-                                                                    </tr>
-            <tr class="token-row">
+                            <td class="label">ETH</td>
+                            <td class="value">$${ethUsdValue.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(${spotETH.toFixed(4)} ETH)</span></td>
+                        </tr>
+                        <tr class="token-row">
                             <td class="label">USDC</td>
                             <td class="value">$${totalUSDC.toFixed(2)}</td>
-                                        </tr>
+                        </tr>
                                     <tr class="token-row">
                             <td class="label">Investimento in corso</td>
                             <td class="value">$${perpInvestment.toFixed(2)}</td>
