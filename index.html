@@ -142,8 +142,12 @@
 
 <body>
     <div class="container">
-        <h1>🪙 Wallet Dinetta</h1>
+        <h1>🪙 Portafoglio Dinetta</h1>
         <p class="subtitle">Esperimento di trading familiare<br>Durata: dal 22 novembre al 27 dicembre 2025</p>
+
+        <div id="lastUpdate" style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #333;"></div>
+        <div style="text-align: center; font-style: italic; color: #666; font-size: 0.85em; margin-bottom: 20px;">si
+            aggiorna ogni minuto</div>
 
         <div id="content" class="loading">Caricamento dati...</div>
 
@@ -151,7 +155,7 @@
 
         <div class="footer">
             <a href="https://hypurrscan.io/address/0x16ca778798c45c0fc0dffaa60190026075c6630c" class="link-button"
-                target="_blank">dettagli investimento in corso</a>
+                target="_blank">dettagli investimenti in corso</a>
         </div>
     </div>
 
@@ -335,7 +339,7 @@
                             <td class="value">$${INITIAL_DEPOSIT.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(150 Euro)</span></td>
                         </tr>
                         <tr>
-                            <td colspan="2" class="section-header">Tokens</td>
+                            <td colspan="2" class="section-header">Tokens nel portafoglio</td>
                         </tr>
                         <tr class="token-row">
                             <td class="label">ETH <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${spotETH.toFixed(4)})</span></td>
@@ -346,7 +350,7 @@
                             <td class="value">$${totalUSDC.toFixed(2)}</td>
                         </tr>
                         <tr>
-                            <td colspan="2" class="section-header">Investimento in corso</td>
+                            <td colspan="2" class="section-header">Tokens investiti</td>
                         </tr>
                         <tr class="token-row">
                             <td class="label">BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span></td>
@@ -356,14 +360,13 @@
                             </td>
                         </tr>
                         <tr>
-                            <td class="label" style="font-weight: 700; color: #333;">Totale Wallet Dinetta</td>
+                            <td class="label" style="font-weight: 700; color: #333;">Totale portafoglio Dinetta</td>
                             <td class="value highlight">$${totalWallet.toFixed(2)}</td>
                         </tr>
                     </table>
-                    <div class="timestamp">Aggiornato il ${currentDateTime}</div>
                 `;
 
-                // document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`; (Removed)
+                document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`;
             } catch (error) {
                 document.getElementById('content').innerHTML = `
                     <p style="color: #e74c3c; text-align: center; padding: 20px;">
