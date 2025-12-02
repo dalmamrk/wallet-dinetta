@@ -137,6 +137,38 @@
             color: #667eea;
             padding: 30px;
         }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .subtitle {
+                font-size: 0.85em;
+                margin-bottom: 20px;
+            }
+            .data-table td {
+                padding: 10px 5px;
+            }
+            .data-table .label {
+                font-size: 0.9em;
+            }
+            .data-table .value {
+                font-size: 1em;
+            }
+            .link-button {
+                width: 100%;
+                padding: 12px 0;
+            }
+        }
     </style>
 </head>
 
@@ -360,7 +392,7 @@
                 // Formattazione PnL
                 const pnlColor = btcPnlValue >= 0 ? '#27ae60' : '#e74c3c';
                 const pnlSign = btcPnlValue >= 0 ? '+' : '';
-                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
+                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block; text-align: right;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
 
                 let candlesHtml = '';
                 if (candles && candles.length > 0) {
@@ -398,13 +430,13 @@
                         </tr>
                         <tr class="token-row">
                             <td class="label">
-                                <div style="display: flex; flex-direction: column; align-items: center; width: fit-content;">
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; width: fit-content;">
                                     <span>BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span></span>
                                     <span style="font-size: 0.8em; color: #999;">$144 al 22/11</span>
                                 </div>
                             </td>
                             <td class="value" style="color: ${pnlColor}; font-weight: 700;">
-                                <div style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin-left: auto;">
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; width: 100%;">
                                     <span>$${perpInvestment.toFixed(2)}</span>
                                     ${pnlHtml}
                                 </div>
