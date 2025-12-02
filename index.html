@@ -145,11 +145,9 @@
         <h1><img src="elsa.webp" alt="Elsa"
                 style="height: 1.2em; vertical-align: middle; margin-right: 10px; border-radius: 50%;"> Portafoglio
             Dinetta</h1>
-        <p class="subtitle">Esperimento di trading familiare<br>Durata: dal 22 novembre al 27 dicembre 2025</p>
+        <p class="subtitle">Esperimento di trading familiare: 22/11 - 26/12 2025</p>
 
         <div id="lastUpdate" style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #333;"></div>
-        <div style="text-align: center; font-style: italic; color: #666; font-size: 0.85em; margin-bottom: 20px;">si
-            aggiorna ogni 30 secondi</div>
 
         <div id="content" class="loading">Caricamento dati...</div>
 
@@ -174,7 +172,8 @@
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            return `${day}/${month} ore ${hours}:${minutes}`;
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${day}/${month} ore ${hours}:${minutes}:${seconds}`;
         }
 
         async function getArbitrumUSDC() {
@@ -251,6 +250,34 @@
             }
         }
 
+        async function getCandles() {
+            try {
+                const now = Date.now();
+                const startTime = now - (7 * 60 * 60 * 1000); // 7 hours ago to be safe
+                const response = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'candleSnapshot',
+                        req: {
+                            coin: 'BTC',
+                            interval: '1h',
+                            startTime: startTime,
+                            endTime: now
+                        }
+                    })
+                });
+                const data = await response.json();
+                // Take the last 6 closed candles (or current + 5 previous)
+                // Hyperliquid returns candles sorted by time? Usually yes.
+                // We need the last 6.
+                return data.slice(-6);
+            } catch (error) {
+                console.error('Errore candele:', error);
+                return [];
+            }
+        }
+
         async function fetchWalletData() {
             try {
                 const perpResponse = await fetch('https://api.hyperliquid.xyz/info', {
@@ -270,6 +297,7 @@
                 const arbitrumUSDC = await getArbitrumUSDC();
                 const arbitrumETH = await getArbitrumETH();
                 const prices = await getPrices();
+                const candles = await getCandles();
                 const ethPrice = prices.ETH;
                 const btcPrice = prices.BTC;
 
@@ -332,13 +360,27 @@
                 // Formattazione PnL
                 const pnlColor = btcPnlValue >= 0 ? '#27ae60' : '#e74c3c';
                 const pnlSign = btcPnlValue >= 0 ? '+' : '';
-                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block; margin-top: 4px;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
+                const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
+
+                let candlesHtml = '';
+                if (candles && candles.length > 0) {
+                    candlesHtml = '<div style="display: flex; gap: 4px; align-items: center;">';
+                    candles.forEach(c => {
+                        const open = parseFloat(c.o);
+                        const close = parseFloat(c.c);
+                        const color = close >= open ? '#27ae60' : '#e74c3c';
+                        candlesHtml += `<div style="width: 12px; height: 20px; background-color: ${color}; border-radius: 2px;" title="O: ${open} C: ${close}"></div>`;
+                    });
+                    candlesHtml += '</div>';
+                } else {
+                    candlesHtml = '<span style="font-size: 0.8em; color: #999;">Dati non disponibili</span>';
+                }
 
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
                         <tr>
-                            <td class="label">Deposito iniziale al 22/11</td>
-                            <td class="value">$${INITIAL_DEPOSIT.toFixed(2)}<br><span style="font-size: 0.75em; color: #999;">(150 Euro)</span></td>
+                            <td class="label">Deposito iniziale di 150 Euro</td>
+                            <td class="value">$${INITIAL_DEPOSIT.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td colspan="2" class="section-header">Tokens nel portafoglio</td>
@@ -356,11 +398,22 @@
                         </tr>
                         <tr class="token-row">
                             <td class="label">
-                                BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span>
-                                ${pnlHtml}
+                                <div style="display: flex; flex-direction: column; align-items: center; width: fit-content;">
+                                    <span>BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span></span>
+                                    <span style="font-size: 0.8em; color: #999;">$144 al 22/11</span>
+                                </div>
                             </td>
                             <td class="value" style="color: ${pnlColor}; font-weight: 700;">
-                                $${perpInvestment.toFixed(2)}
+                                <div style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin-left: auto;">
+                                    <span>$${perpInvestment.toFixed(2)}</span>
+                                    ${pnlHtml}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="token-row" style="border-bottom: 1px solid #e0e0e0;">
+                            <td class="label" style="padding-left: 25px; font-size: 0.9em; color: #777;">Ultime 6 ore:</td>
+                            <td class="value" style="display: flex; justify-content: flex-end;">
+                                ${candlesHtml}
                             </td>
                         </tr>
                         <tr>
@@ -370,7 +423,7 @@
                     </table>
                 `;
 
-                document.getElementById('lastUpdate').textContent = `Aggiornato il ${currentDateTime}`;
+                document.getElementById('lastUpdate').textContent = `aggiornamento al ${currentDateTime}`;
             } catch (error) {
                 document.getElementById('content').innerHTML = `
                     <p style="color: #e74c3c; text-align: center; padding: 20px;">
