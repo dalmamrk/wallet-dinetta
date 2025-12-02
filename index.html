@@ -132,6 +132,37 @@
             transform: translateY(-2px);
         }
 
+/* --- PISTA ELSA CHE CAMMINA --- */
+.dog-lane {
+    position: relative;
+    height: 90px;
+    margin: 8px 0 12px;
+    overflow: visible;
+}
+
+.dog-walk {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 130px;
+    /* PARTENZA fuori a SINISTRA */
+    transform: translateX(-150%) translateY(-50%);
+    pointer-events: none;
+    animation: dog-walk 7s linear 0.5s 1 forwards;
+}
+
+@keyframes dog-walk {
+    0% {
+        /* fuori a sinistra */
+        transform: translateX(-150%) translateY(-50%);
+    }
+    100% {
+        /* fuori a destra */
+        transform: translateX(120%) translateY(-50%);
+    }
+}
+/* --- FINE PISTA ELSA --- */
+
         .loading {
             text-align: center;
             color: #667eea;
@@ -168,6 +199,12 @@
                 width: 100%;
                 padding: 12px 0;
             }
+            .dog-lane {
+                height: 70px;
+            }
+            .dog-walk {
+                width: 100px;
+            }
         }
     </style>
 </head>
@@ -180,6 +217,11 @@
         <p class="subtitle">Esperimento di trading familiare: 22/11 - 26/12 2025</p>
 
         <div id="lastUpdate" style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #333;"></div>
+
+        <!-- Pista Elsa tra aggiornamento e deposito iniziale -->
+        <div class="dog-lane">
+            <img src="elsa2.webp" alt="Elsa che cammina" class="dog-walk">
+        </div>
 
         <div id="content" class="loading">Caricamento dati...</div>
 
@@ -300,9 +342,6 @@
                     })
                 });
                 const data = await response.json();
-                // Take the last 6 closed candles (or current + 5 previous)
-                // Hyperliquid returns candles sorted by time? Usually yes.
-                // We need the last 6.
                 return data.slice(-6);
             } catch (error) {
                 console.error('Errore candele:', error);
@@ -333,10 +372,8 @@
                 const ethPrice = prices.ETH;
                 const btcPrice = prices.BTC;
 
-                // Calcolo investimento in corso (solo posizioni perpetue)
                 const perpInvestment = parseFloat(perpData.marginSummary?.totalNtlPos || 0);
 
-                // Trova la posizione BTC per ottenere la quantità e entry price
                 let btcAmount = 0;
                 let btcEntryPx = 0;
                 let btcPnlPercent = 0;
@@ -349,17 +386,13 @@
                         btcEntryPx = parseFloat(btcPosition.position.entryPx || 0);
 
                         if (btcEntryPx > 0) {
-                            // Costo base = Prezzo ingresso * Quantità
                             const costBasis = btcEntryPx * btcAmount;
-                            // Valore corrente = Prezzo attuale * Quantità (o perpInvestment)
-                            // Usiamo perpInvestment che è totalNtlPos (valore nozionale posizione)
                             btcPnlValue = perpInvestment - costBasis;
                             btcPnlPercent = ((perpInvestment - costBasis) / costBasis) * 100;
                         }
                     }
                 }
 
-                // Calcolo USDC totale (Spot HyperLiquid + Arbitrum)
                 let spotUSDC = 0;
                 if (spotData.balances && Array.isArray(spotData.balances)) {
                     spotUSDC = spotData.balances.reduce((sum, balance) => {
@@ -370,7 +403,6 @@
                     }, 0);
                 }
 
-                // Calcolo ETH separato (Spot HyperLiquid + Arbitrum nativo)
                 let hyperLiquidSpotETH = 0;
                 if (spotData.balances && Array.isArray(spotData.balances)) {
                     hyperLiquidSpotETH = spotData.balances.reduce((sum, balance) => {
@@ -385,11 +417,9 @@
 
                 const totalUSDC = spotUSDC + arbitrumUSDC;
 
-                // Totale wallet completo (ETH + USDC + Perps)
                 const totalWallet = totalUSDC + perpInvestment + ethUsdValue;
                 const currentDateTime = formatDateTime();
 
-                // Formattazione PnL
                 const pnlColor = btcPnlValue >= 0 ? '#27ae60' : '#e74c3c';
                 const pnlSign = btcPnlValue >= 0 ? '+' : '';
                 const pnlHtml = `<span style="color: ${pnlColor}; font-size: 0.8em; display: block; text-align: right;">${pnlSign}$${Math.abs(btcPnlValue).toFixed(2)} (${pnlSign}${btcPnlPercent.toFixed(2)}%)</span>`;
