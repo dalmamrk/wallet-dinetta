@@ -212,7 +212,6 @@
 
     <script>
         const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
-        const INITIAL_DEPOSIT = 168;
         const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc';
         const USDC_NATIVE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
         const USDC_BRIDGED = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8';
@@ -302,6 +301,33 @@
         }
 
 
+        async function getDeposits() {
+            try {
+                const response = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'userNonFundingLedgerUpdates',
+                        user: WALLET_ADDRESS
+                    })
+                });
+                const data = await response.json();
+
+                let totalDeposited = 0;
+                if (Array.isArray(data)) {
+                    totalDeposited = data.reduce((sum, update) => {
+                        if (update.delta && update.delta.type === 'deposit') {
+                            return sum + parseFloat(update.delta.usdc || 0);
+                        }
+                        return sum;
+                    }, 0);
+                }
+                return totalDeposited;
+            } catch (error) {
+                console.error('Errore depositi:', error);
+                return 168; // Fallback to previous hardcoded value if API fails
+            }
+        }
 
         async function fetchWalletData() {
             try {
@@ -322,6 +348,7 @@
                 const arbitrumUSDC = await getArbitrumUSDC();
                 const arbitrumETH = await getArbitrumETH();
                 const prices = await getPrices();
+                const totalDeposited = await getDeposits();
 
                 const ethPrice = prices.ETH;
                 const btcPrice = prices.BTC;
@@ -409,8 +436,8 @@
                 document.getElementById('content').innerHTML = `
                     <table class="data-table">
                         <tr>
-                            <td class="label">Deposito di 150 Euro il 22/11</td>
-                            <td class="value">$${INITIAL_DEPOSIT.toFixed(2)}</td>
+                            <td class="label">Totale Depositato</td>
+                            <td class="value">$${totalDeposited.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td colspan="2" class="section-header">Tokens nel portafoglio</td>
