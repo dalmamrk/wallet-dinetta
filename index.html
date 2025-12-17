@@ -211,10 +211,15 @@
     </div>
 
     <script>
-        const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
-        const ARBITRUM_RPC = 'https://1rpc.io/arb';
+        const RPC_ENDPOINTS = [
+            'https://arbitrum.llamarpc.com',
+            'https://arbitrum-one.public.blastapi.io',
+            'https://1rpc.io/arb',
+            'https://arb1.arbitrum.io/rpc'
+        ];
         const USDC_NATIVE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
         const USDC_BRIDGED = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8';
+        const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
 
         function formatDateTime() {
             const now = new Date();
@@ -226,58 +231,57 @@
             return `${day}/${month} ore ${hours}:${minutes}:${seconds}`;
         }
 
-        async function getArbitrumUSDC() {
-            try {
-                const data = '0x70a08231' + WALLET_ADDRESS.slice(2).padStart(64, '0');
-                const [nativeRes, bridgedRes] = await Promise.all([
-                    fetch(ARBITRUM_RPC, {
+        async function fetchRpcWithFallback(method, params) {
+            for (const rpcUrl of RPC_ENDPOINTS) {
+                try {
+                    const response = await fetch(rpcUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             jsonrpc: '2.0',
                             id: 1,
-                            method: 'eth_call',
-                            params: [{ to: USDC_NATIVE, data: data }, 'latest']
+                            method: method,
+                            params: params
                         })
-                    }),
-                    fetch(ARBITRUM_RPC, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            jsonrpc: '2.0',
-                            id: 2,
-                            method: 'eth_call',
-                            params: [{ to: USDC_BRIDGED, data: data }, 'latest']
-                        })
-                    })
-                ]);
-                const nativeData = await nativeRes.json();
-                const bridgedData = await bridgedRes.json();
+                    });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    if (data.error) throw new Error(`RPC error: ${JSON.stringify(data.error)}`);
+                    return data;
+                } catch (error) {
+                    console.warn(`Failed to fetch from ${rpcUrl}:`, error);
+                    // Continue to next RPC
+                }
+            }
+            throw new Error('All RPC endpoints failed');
+        }
+
+        async function getArbitrumUSDC() {
+            try {
+                const data = '0x70a08231' + WALLET_ADDRESS.slice(2).padStart(64, '0');
+
+                // Fetch Native and Bridged USDC sequentially or parallel using the robust fetcher
+                // We'll do parallel for speed, but each has its own fallback loop if needed.
+                // Actually, let's keep it simple: separate calls.
+
+                const nativeData = await fetchRpcWithFallback('eth_call', [{ to: USDC_NATIVE, data: data }, 'latest']);
+                const bridgedData = await fetchRpcWithFallback('eth_call', [{ to: USDC_BRIDGED, data: data }, 'latest']);
+
                 const nativeBalance = nativeData.result ? parseInt(nativeData.result, 16) / 1e6 : 0;
                 const bridgedBalance = bridgedData.result ? parseInt(bridgedData.result, 16) / 1e6 : 0;
                 return nativeBalance + bridgedBalance;
             } catch (error) {
-                console.error('Errore Arbitrum USDC:', error);
+                console.error('Errore Arbitrum USDC (All RPCs failed):', error);
                 return 0;
             }
         }
 
         async function getArbitrumETH() {
             try {
-                const response = await fetch(ARBITRUM_RPC, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        id: 3,
-                        method: 'eth_getBalance',
-                        params: [WALLET_ADDRESS, 'latest']
-                    })
-                });
-                const data = await response.json();
+                const data = await fetchRpcWithFallback('eth_getBalance', [WALLET_ADDRESS, 'latest']);
                 return data.result ? parseInt(data.result, 16) / 1e18 : 0;
             } catch (error) {
-                console.error('Errore Arbitrum ETH:', error);
+                console.error('Errore Arbitrum ETH (All RPCs failed):', error);
                 return 0;
             }
         }
