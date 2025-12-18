@@ -228,7 +228,8 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${day}/${month} ore ${hours}:${minutes}:${seconds}`;
+            const year = now.getFullYear();
+            return `${day}-${month}-${year} ore ${hours}:${minutes}:${seconds}`;
         }
 
         async function fetchRpcWithFallback(method, params) {
@@ -493,7 +494,10 @@
                     </table>
                 `;
 
-                document.getElementById('lastUpdate').textContent = `aggiornamento al ${currentDateTime}`;
+                document.getElementById('lastUpdate').innerHTML = `
+                    <div style="font-style: italic; font-weight: normal; margin-bottom: 2px;">aggiornato ogni 5 secondi</div>
+                    <div style="font-weight: bold;">${currentDateTime}</div>
+                `;
             } catch (error) {
                 document.getElementById('content').innerHTML = `
                     <p style="color: #e74c3c; text-align: center; padding: 20px;">
@@ -505,7 +509,7 @@
         }
 
         fetchWalletData();
-        setInterval(fetchWalletData, 30000);
+        setInterval(fetchWalletData, 5000);
     </script>
 </body>
 
