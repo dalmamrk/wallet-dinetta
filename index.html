@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wallet Dinetta - Dashboard</title>
+    <meta name="theme-color" content="#ffffff">
     <style>
         * {
             margin: 0;
@@ -142,11 +143,16 @@
 
         @media (max-width: 480px) {
             body {
-                padding: 10px;
+                padding: 0;
+                background: white;
+                /* App-like feel */
             }
 
             .container {
-                padding: 15px 10px;
+                padding: 20px 15px;
+                border-radius: 0;
+                box-shadow: none;
+                min-height: 100vh;
             }
 
             h1 {
@@ -175,7 +181,14 @@
 
             .link-button {
                 width: 100%;
-                padding: 12px 0;
+                padding: 15px 0;
+                /* Larger touch target */
+                font-size: 1em;
+            }
+
+            .link-button:active {
+                transform: scale(0.98);
+                background: #5a6fd1;
             }
 
             .dog-lane {
@@ -194,7 +207,7 @@
         <h1><img src="elsa.webp" alt="Elsa"
                 style="height: 1.2em; vertical-align: middle; margin-right: 10px; border-radius: 50%;"> Portafoglio
             Dinetta</h1>
-        <p class="subtitle">Esperimento di trading familiare: 22/11 - 26/12 2025</p>
+
 
         <div id="lastUpdate" style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #333;"></div>
 
@@ -217,6 +230,12 @@
             'https://1rpc.io/arb',
             'https://arb1.arbitrum.io/rpc'
         ];
+        const MAINNET_RPC_ENDPOINTS = [
+            'https://eth.llamarpc.com',
+            'https://ethereum.publicnode.com',
+            'https://rpc.ankr.com/eth',
+            'https://1rpc.io/eth'
+        ];
         const USDC_NATIVE = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
         const USDC_BRIDGED = '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8';
         const WALLET_ADDRESS = '0x16ca778798c45c0fc0dffaa60190026075c6630c';
@@ -232,8 +251,8 @@
             return `${day}-${month}-${year} ore ${hours}:${minutes}:${seconds}`;
         }
 
-        async function fetchRpcWithFallback(method, params) {
-            for (const rpcUrl of RPC_ENDPOINTS) {
+        async function fetchRpcWithFallback(method, params, endpoints = RPC_ENDPOINTS) {
+            for (const rpcUrl of endpoints) {
                 try {
                     const response = await fetch(rpcUrl, {
                         method: 'POST',
@@ -283,6 +302,16 @@
                 return data.result ? parseInt(data.result, 16) / 1e18 : 0;
             } catch (error) {
                 console.error('Errore Arbitrum ETH (All RPCs failed):', error);
+                return 0;
+            }
+        }
+
+        async function getMainnetETH() {
+            try {
+                const data = await fetchRpcWithFallback('eth_getBalance', [WALLET_ADDRESS, 'latest'], MAINNET_RPC_ENDPOINTS);
+                return data.result ? parseInt(data.result, 16) / 1e18 : 0;
+            } catch (error) {
+                console.error('Errore Mainnet ETH (All RPCs failed):', error);
                 return 0;
             }
         }
@@ -352,6 +381,7 @@
 
                 const arbitrumUSDC = await getArbitrumUSDC();
                 const arbitrumETH = await getArbitrumETH();
+                const mainnetETH = await getMainnetETH();
                 const prices = await getPrices();
                 const totalDeposited = await getDeposits();
 
@@ -362,6 +392,7 @@
 
                 let btcAmount = 0;
                 let btcEntryPx = 0;
+                let btcCostBasis = 0;
                 let btcPnlPercent = 0;
                 let btcPnlValue = 0;
                 let btcCurrentValue = 0;
@@ -380,9 +411,9 @@
                         btcCurrentValue = Math.abs(btcAmount * btcPrice);
 
                         if (btcEntryPx > 0) {
-                            const costBasis = Math.abs(btcAmount * btcEntryPx);
-                            btcPnlValue = btcCurrentValue - costBasis;
-                            btcPnlPercent = (btcPnlValue / costBasis) * 100;
+                            btcCostBasis = Math.abs(btcAmount * btcEntryPx);
+                            btcPnlValue = btcCurrentValue - btcCostBasis;
+                            btcPnlPercent = (btcPnlValue / btcCostBasis) * 100;
                         }
                     }
 
@@ -419,7 +450,7 @@
                         return sum;
                     }, 0);
                 }
-                const spotETH = hyperLiquidSpotETH + arbitrumETH;
+                const spotETH = hyperLiquidSpotETH + arbitrumETH + mainnetETH;
                 const ethUsdValue = spotETH * ethPrice;
 
                 const totalUSDC = spotUSDC + arbitrumUSDC;
@@ -458,25 +489,12 @@
                         <tr>
                             <td colspan="2" class="section-header">Tokens investiti</td>
                         </tr>
-                        <tr class="token-row">
-                            <td class="label">
-                                <div style="display: flex; flex-direction: column; align-items: flex-start; width: fit-content;">
-                                    <span>ETH <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${ethPerpAmount.toFixed(4)})</span></span>
-                                    <span style="font-size: 0.8em; color: #999;">$20 al 03/12</span>
-                                </div>
-                            </td>
-                            <td class="value" style="color: ${ethPerpPnlValue >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: 700;">
-                                <div style="display: flex; flex-direction: column; align-items: flex-end; width: 100%;">
-                                    <span>$${ethPerpCurrentValue.toFixed(2)}</span>
-                                    ${ethPerpPnlHtml}
-                                </div>
-                            </td>
-                        </tr>
+
                         <tr class="token-row">
                             <td class="label">
                                 <div style="display: flex; flex-direction: column; align-items: flex-start; width: fit-content;">
                                     <span>BITCOIN <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${btcAmount.toFixed(4)})</span></span>
-                                    <span style="font-size: 0.8em; color: #999;">$144 al 22/11</span>
+                                    <span style="font-size: 0.8em; color: #999;">$${btcCostBasis.toFixed(2)} investiti il 24/12</span>
                                 </div>
                             </td>
                             <td class="value" style="color: ${btcPnlValue >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: 700;">
