@@ -363,6 +363,98 @@
             }
         }
 
+        async function getBitcoinHistory() {
+            try {
+                const end = Date.now();
+                const start = end - (12 * 60 * 60 * 1000) - (60 * 60 * 1000); // 13 hours Buffer to ensure we get 12
+                const response = await fetch('https://api.hyperliquid.xyz/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'candleSnapshot',
+                        req: {
+                            coin: 'BTC',
+                            interval: '1h',
+                            startTime: start,
+                            endTime: end
+                        }
+                    })
+                });
+                const data = await response.json();
+                // Take last 12
+                return Array.isArray(data) ? data.slice(-12) : [];
+            } catch (e) {
+                console.error('History error:', e);
+                return [];
+            }
+        }
+
+        function createTrendChart(candles) {
+            if (!candles || candles.length === 0) return '';
+
+            // Calculate global min/max for scaling
+            let min = Infinity;
+            let max = -Infinity;
+
+            candles.forEach(c => {
+                const l = parseFloat(c.l);
+                const h = parseFloat(c.h);
+                if (l < min) min = l;
+                if (h > max) max = h;
+            });
+
+            // Avoid division by zero
+            if (min === max) {
+                max = min + 1;
+            }
+
+            const range = max - min;
+            const width = 240;
+            const svgHeight = 70; // Increased height for labels
+            const chartHeight = 50;
+            const barWidth = 14;
+
+            // Generate bars and labels
+            const elements = candles.map((c, i) => {
+                const open = parseFloat(c.o);
+                const close = parseFloat(c.c);
+                // timestamp is in ms
+                const date = new Date(c.t);
+                const hour = String(date.getHours()).padStart(2, '0');
+
+                const isGreen = close >= open;
+                const color = isGreen ? '#27ae60' : '#e74c3c';
+
+                // Scale Y values within chartHeight
+                const padding = 5;
+                const drawHeight = chartHeight - (padding * 2);
+
+                const yTop = padding + (1 - (Math.max(open, close) - min) / range) * drawHeight;
+                const yBottom = padding + (1 - (Math.min(open, close) - min) / range) * drawHeight;
+
+                let barHeight = yBottom - yTop;
+                if (barHeight < 1) barHeight = 1;
+
+                const x = i * (width / 12);
+                const xPos = x + (width / 12 - barWidth) / 2;
+
+                const rect = `<rect x="${xPos}" y="${yTop}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="2" />`;
+                const text = `<text x="${xPos + barWidth / 2}" y="${svgHeight - 2}" text-anchor="middle" font-size="10" fill="#999" font-family="sans-serif">${hour}</text>`;
+
+                return rect + text;
+            }).join('');
+
+            return `
+                <tr class="token-row">
+                    <td colspan="2" style="padding: 10px 0; border: none;">
+                        <svg viewBox="0 0 ${width} ${svgHeight}" style="width: 100%; height: 70px; display: block;" preserveAspectRatio="none">
+                            ${elements}
+                        </svg>
+                    </td>
+                </tr>
+            `;
+        }
+
         async function fetchWalletData() {
             try {
                 const perpResponse = await fetch('https://api.hyperliquid.xyz/info', {
@@ -467,6 +559,9 @@
                 const btcPnlHtml = getPnlHtml(btcPnlValue, btcPnlPercent);
                 const ethPerpPnlHtml = getPnlHtml(ethPerpPnlValue, ethPerpPnlPercent);
 
+                const btcHistory = await getBitcoinHistory();
+                const btcChartHtml = createTrendChart(btcHistory);
+
 
 
                 document.getElementById('content').innerHTML = `
@@ -482,10 +577,7 @@
                             <td class="label">ETH <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${spotETH.toFixed(4)})</span></td>
                             <td class="value">$${ethUsdValue.toFixed(2)}</td>
                         </tr>
-                        <tr class="token-row">
-                            <td class="label">USDC <span style="font-size: 0.85em; color: #999; font-weight: normal;">(${totalUSDC.toFixed(4)})</span></td>
-                            <td class="value">$${totalUSDC.toFixed(2)}</td>
-                        </tr>
+
                         <tr>
                             <td colspan="2" class="section-header">Tokens investiti</td>
                         </tr>
@@ -504,6 +596,7 @@
                                 </div>
                             </td>
                         </tr>
+                        ${btcChartHtml}
 
                         <tr>
                             <td class="label" style="font-weight: 700; color: #333;">Totale portafoglio Dinetta</td>
